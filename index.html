@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f2ec">
+  <meta name="description" content="互動觀察無向圖的深度優先搜尋 DFS 與廣度優先搜尋 BFS，逐步查看走訪順序、堆疊與佇列。">
+  <title>圖的走訪 DFS／BFS｜資料結構互動展示</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <a class="brand" href="../" aria-label="回到資料結構首頁"><span class="brand-mark">G₆</span><span>資料結構實驗室<small>GRAPH TRAVERSAL · DFS / BFS</small></span></a>
+      <a class="home-link" href="../">← 回到首頁</a>
+    </header>
+
+    <section class="intro">
+      <div>
+        <p class="eyebrow">GRAPH / 圖論基礎</p>
+        <h1>走訪一張圖，<br><em>看見搜尋的次序。</em></h1>
+        <p class="lede">同一張圖，兩種策略：DFS 沿著一條路深入再回溯；BFS 先拜訪離起點較近的頂點。選擇起點並逐步操作，觀察堆疊、佇列與走訪序列如何改變。</p>
+      </div>
+      <aside class="spec-card" aria-label="圖的規格">
+        <p class="eyebrow">本題固定圖形</p>
+        <div><b>6</b><span>個頂點<br>A、B、C、D、E、F</span></div>
+        <div><b>9</b><span>條無向邊<br>無方向、無權重</span></div>
+        <small>鄰接串列依 A → F 字母順序檢查</small>
+      </aside>
+    </section>
+
+    <section class="workbench" aria-label="圖走訪互動區">
+      <section class="graph-panel panel" aria-labelledby="graphHeading">
+        <div class="section-head"><div><p class="eyebrow">01 / GRAPH</p><h2 id="graphHeading">無向圖 G = (V, E)</h2></div><span class="live-dot">固定範例圖</span></div>
+        <p class="edge-list"><b>邊集合 E</b>　(A,B)、(A,C)、(B,C)、(B,D)、(C,D)、(C,E)、(D,F)、(E,F)、(D,E)</p>
+        <div class="graph-wrap">
+          <svg id="graph" viewBox="0 0 620 370" role="img" aria-labelledby="graphTitle graphDesc">
+            <title id="graphTitle">六個頂點與九條邊構成的無向圖</title>
+            <desc id="graphDesc">A 校門連接 B 圖書館與 C 餐廳；B 連接 A、C、D 系館；C 連接 A、B、D、E 宿舍；D 連接 B、C、E、F 體育館；E 連接 C、D、F；F 連接 D、E。</desc>
+            <defs>
+              <pattern id="graphGrid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M 24 0 L 0 0 0 24" fill="none" stroke="#e4eae1" stroke-width=".7"/></pattern>
+              <linearGradient id="nodeSurface" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#edf3e9"/></linearGradient>
+              <filter id="nodeShadow" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#34483a" flood-opacity=".13"/></filter>
+            </defs>
+            <rect class="graph-canvas" x="10" y="10" width="600" height="350" rx="22" fill="url(#graphGrid)"/>
+            <g class="edges" aria-hidden="true">
+              <line data-edge="A-B" x1="112" y1="185" x2="235" y2="75"/><line data-edge="A-C" x1="112" y1="185" x2="235" y2="295"/>
+              <line data-edge="B-C" x1="235" y1="75" x2="235" y2="295"/><line data-edge="B-D" x1="235" y1="75" x2="400" y2="75"/>
+              <line data-edge="C-D" x1="235" y1="295" x2="400" y2="75"/><line data-edge="C-E" x1="235" y1="295" x2="400" y2="295"/>
+              <line data-edge="D-E" x1="400" y1="75" x2="400" y2="295"/>
+              <line data-edge="D-F" x1="400" y1="75" x2="520" y2="185"/><line data-edge="E-F" x1="400" y1="295" x2="520" y2="185"/>
+            </g>
+            <g class="nodes">
+              <g class="node" data-node="A" tabindex="0" role="button" aria-label="選 A 校門為起點" aria-pressed="false"><circle class="node-halo" cx="112" cy="185" r="37"/><circle class="node-core" cx="112" cy="185" r="29"/><text x="112" y="192">A</text><text class="place-label" x="112" y="242">校門</text></g>
+              <g class="node" data-node="B" tabindex="0" role="button" aria-label="選 B 圖書館為起點" aria-pressed="false"><circle class="node-halo" cx="235" cy="75" r="37"/><circle class="node-core" cx="235" cy="75" r="29"/><text x="235" y="82">B</text><text class="place-label label-left" x="183" y="82">圖書館</text></g>
+              <g class="node" data-node="C" tabindex="0" role="button" aria-label="選 C 餐廳為起點" aria-pressed="false"><circle class="node-halo" cx="235" cy="295" r="37"/><circle class="node-core" cx="235" cy="295" r="29"/><text x="235" y="302">C</text><text class="place-label label-left" x="183" y="302">餐廳</text></g>
+              <g class="node" data-node="D" tabindex="0" role="button" aria-label="選 D 系館為起點" aria-pressed="false"><circle class="node-halo" cx="400" cy="75" r="37"/><circle class="node-core" cx="400" cy="75" r="29"/><text x="400" y="82">D</text><text class="place-label label-right" x="452" y="82">系館</text></g>
+              <g class="node" data-node="E" tabindex="0" role="button" aria-label="選 E 宿舍為起點" aria-pressed="false"><circle class="node-halo" cx="400" cy="295" r="37"/><circle class="node-core" cx="400" cy="295" r="29"/><text x="400" y="302">E</text><text class="place-label label-right" x="452" y="302">宿舍</text></g>
+              <g class="node" data-node="F" tabindex="0" role="button" aria-label="選 F 體育館為起點" aria-pressed="false"><circle class="node-halo" cx="520" cy="185" r="37"/><circle class="node-core" cx="520" cy="185" r="29"/><text x="520" y="192">F</text><text class="place-label" x="520" y="242">體育館</text></g>
+            </g>
+          </svg>
+        </div>
+        <div class="legend"><span><i class="legend-start"></i>起點</span><span><i class="legend-current"></i>目前拜訪</span><span><i class="legend-visited"></i>已拜訪</span><span><i class="legend-frontier"></i>待拜訪</span><span><i class="legend-visit-edge"></i>DFS 走訪／目前檢查（虛線）</span><span><i class="legend-shortest-edge"></i>BFS 最短路徑樹（實線）</span></div>
+        <p class="graph-note">淡色線是原圖邊；DFS 的走訪邊與目前檢查的非最短路徑邊以虛線標示。BFS 發現新節點時，即確認該節點的最短距離，所選最短路徑樹以實線標示。每按一步只檢查一條鄰邊或進行一次拜訪／回溯。</p>
+      </section>
+
+      <section class="control-panel panel" aria-labelledby="controlHeading">
+        <div class="section-head"><div><p class="eyebrow">02 / CONTROL</p><h2 id="controlHeading">選擇走訪方法</h2></div><span class="step-badge" id="stepBadge">準備開始</span></div>
+        <div class="method-tabs" role="group" aria-label="走訪方法">
+          <button type="button" class="method active" data-method="DFS" aria-pressed="true"><b>DFS</b><span>深度優先</span></button>
+          <button type="button" class="method" data-method="BFS" aria-pressed="false"><b>BFS</b><span>廣度優先</span></button>
+        </div>
+        <div class="method-explain" id="methodExplain" aria-live="polite"></div>
+        <label class="start-label" for="startSelect">起始頂點</label>
+        <select id="startSelect"><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option></select>
+        <div class="controls">
+          <button id="resetButton" class="secondary" type="button">↺ 重設</button>
+          <button id="previousButton" class="secondary" type="button" disabled>← 上一步</button>
+          <button id="nextButton" class="primary" type="button">單步執行 →</button>
+          <button id="playButton" class="play" type="button" aria-pressed="false">▶ 自動播放</button>
+        </div>
+        <div class="status" aria-live="polite"><span id="statusTitle">準備從 A 開始</span><p id="statusText"></p></div>
+        <div class="frontier-card"><div><b id="frontierLabel">遞迴堆疊 Stack</b><span id="frontierHint">目前深入路徑</span></div><output id="frontier">[ A ]</output></div>
+        <div class="order-card"><div><b>走訪序列</b><span id="visitedCount">0 / 6 個頂點</span></div><output id="order">尚未開始</output></div>
+      </section>
+    </section>
+
+    <section class="trace-section" aria-labelledby="traceHeading">
+      <div class="trace-heading"><div><p class="eyebrow">03 / TRACE</p><h2 id="traceHeading">逐步追蹤</h2></div><p>每按一次只執行一個動作：拜訪或取出一個節點、檢查一條相鄰邊，或回溯。已發現的鄰點會略過，不重複加入。</p></div>
+      <div class="trace-table-wrap"><table><thead><tr><th>步驟</th><th>動作</th><th>目前頂點</th><th>檢查的邊</th><th>操作結果</th><th id="traceFrontierHead">遞迴堆疊（底 → 頂）</th></tr></thead><tbody id="traceBody"><tr><td colspan="6" class="empty-row">按「單步執行」開始；不會預先顯示完整走訪結果。</td></tr></tbody></table></div>
+    </section>
+
+    <section class="explanation" aria-labelledby="explanationHeading">
+      <div class="trace-heading"><div><p class="eyebrow">04 / CONCEPTS</p><h2 id="explanationHeading">原理與正確性</h2></div><p>DFS 與 BFS 都會系統性地探索可達頂點，差別在於下一個待處理頂點的選擇方式。</p></div>
+      <div class="concept-grid">
+        <article><span>01 / DFS</span><h3>深度優先搜尋</h3><p>使用遞迴呼叫堆疊實作。依鄰接串列順序檢查鄰點；遇到未拜訪頂點，就立即深入該頂點。沒有未拜訪鄰點時，函式返回上一層繼續檢查，所以呼叫路徑正好呈現目前的深入路線。</p><code>時間 O(|V| + |E|)　空間 O(|V|)</code></article>
+        <article><span>02 / BFS</span><h3>廣度優先搜尋</h3><p>使用先進先出佇列（Queue）。先處理起點所有鄰點，再處理距離更遠的頂點。對無權圖，BFS 首次到達每個頂點時，得到從起點出發的最少邊數距離。</p><code>時間 O(|V| + |E|)　空間 O(|V|)</code></article>
+        <article><span>03 / ORDER</span><h3>自己推導走訪順序</h3><p>邊集合只定義哪些頂點相連，沒有指定鄰點順序。本頁採字母順序。先查看目前的堆疊或佇列，再依照每一步實際檢查的鄰邊推導；完整走訪序列不會預先揭露。</p><code>起點可自行切換</code></article>
+        <article><span>04 / COVERAGE</span><h3>走訪範圍</h3><p>走訪從指定起點出發，只會涵蓋與起點連通的頂點。這題的圖是連通圖，所以從任一頂點出發，DFS 與 BFS 都會恰好拜訪全部六個頂點各一次。</p><code>標記 visited，避免重複拜訪</code></article>
+      </div>
+      <div class="invariant"><b>本展示採用的不變條件</b><span>每個頂點一旦開始拜訪（DFS）或加入佇列（BFS）就立即標記為已發現；因此每個頂點只會遞迴進入一次或入佇列一次。DFS 的呼叫堆疊路徑與 BFS 的佇列，分別記錄目前的深入路線與待處理頂點。</span></div>
+    </section>
+    <footer><span>VERTEX <b>→</b> FRONTIER <b>→</b> VISIT</span><span>DFS · Stack　/　BFS · Queue</span><span>資料結構練習 <i>✳</i></span></footer>
+  </main>
+  <script src="script.js"></script>
+</body>
+</html>
